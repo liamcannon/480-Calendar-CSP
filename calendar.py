@@ -1,4 +1,3 @@
-import sched
 from xml import dom
 from typing import Dict, List, NamedTuple, Optional
 from csp import CSP, Constraint
@@ -18,13 +17,13 @@ class Room(NamedTuple):
 
 class Professor(NamedTuple):
     name: str
-    schedule: List[List[str]]
+    schedule: List[List[Room]]
 
 class Course(NamedTuple):
     name: str
     room: Room
-    doubleBlock: False
     professor: Professor
+    doubleBlock: bool = False
 # Schedule class
 
 class Schedule(NamedTuple):
@@ -74,21 +73,23 @@ def generate_domain(course: Course, schedule: Schedule) -> List[Schedule]:
                             domain.append(tempCopy)
     return domain
 
-# class ScheduleConstraint(Constraint[]):
-#     # can't have same class twice on same day
-#     # can't have same class twice on same time
-#     # can't have overlapping classes in the same room
-#     def __init__(self, schedule: Schedule) -> None:
-#         super().__init__(schedule)
+class ScheduleConstraint(Constraint[Course, List[Schedule]]):
+    # can't have same class twice on same day
+    # can't have same class twice on same time
+    # can't have overlapping classes in the same room
+    def __init__(self, courses: List[Course]) -> None:
+        super().__init__(courses)
 
-
-#     def satisfied(self, )
+    def satisfied(self, assignment: Dict[Course, List[Schedule]]) -> bool:
+        tempList = List[List[Schedule]]
+        # check if any courses overlap
         
-#     # def satisfied(self, assignment: Dict[str, List[GridLocation]]) -> bool:
-#     #     # constraint = [pos for values in assignment.values() for pos in values]
-#     #     all_locations = [locs for values in assignment.values() for locs in values]
-#     #     #FROM BOOK 
-#     #     return len(set(all_locations)) == len(all_locations)
+        
+    # def satisfied(self, assignment: Dict[str, List[GridLocation]]) -> bool:
+    #     # constraint = [pos for values in assignment.values() for pos in values]
+    #     all_locations = [locs for values in assignment.values() for locs in values]
+    #     #FROM BOOK 
+    #     return len(set(all_locations)) == len(all_locations)
 
 # class RoomConstraint(Constraint[Chip, List[GridLocation]]):
 #     def __init__(self, chips: List[Chip]) -> None:
