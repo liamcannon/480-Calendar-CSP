@@ -50,21 +50,9 @@ def generate_grid(rows: int, columns: int) -> Schedule:
 
 def display_grid(grid: Schedule) -> None:
     # rotate the grid so that it displays correctly
-    """rotated_grid = list(zip(*grid))
+    rotated_grid = list(zip(*grid))
     for row in rotated_grid:
-        for i in row:
-            if isinstance(i, type(str)):
-                print("-", end="")
-            else:
-                print(i.course, end="")
-        print("\n")"""
-    for i in range(len(grid[0])):
-        for y in range(len(grid)):
-            if grid[y][i] == "-":
-                print("-,", end="")
-            else:
-                print(grid[y][i].course.name + ",", end="")
-        print("\n")
+        print(row)
 
 def generate_domain(course: Course, schedule: Schedule) -> List[Schedule]:
 
@@ -95,7 +83,7 @@ def generate_domain(course: Course, schedule: Schedule) -> List[Schedule]:
                     if(schedule.schedule[row][column] == "-"):
                         tempCopy = deepcopy(schedule)
                         tempCopy.schedule[row][column] = roomCourse
-                        tempCopy.schedule[row+3][column] = roomCourse
+                        tempCopy.schedule[row+2][column] = roomCourse
                         domain.append(tempCopy)
     return domain
 
@@ -183,7 +171,7 @@ def solution() -> None:
 if __name__ == "__main__":
     newSchedule = Schedule([["-", "-", "-"], ["-", "-", "-"], ["-", "-", "-"], ["-", "-", "-"], ["-", "-", "-"]])
     # variables = [Course("300", Room("joyce110"), True , Professor("david")), Course("200", Room("joyce110"), True, Professor("david")), Course("400", Room("joyce110"), True, Professor("david"))]
-    variables = [Course("300", True), Course("400", True), Course("200", False),Course("500", True),Course("600", True)]
+    variables = [Course("300", True), Course("200", False), Course("400", True)]
     variableDict = {}
     #print(generate_domain(variables[0], newSchedule))
     for x in variables:
@@ -201,6 +189,6 @@ if __name__ == "__main__":
         print("returned none")
     else:
         print("got something back")
-
-        display_grid(dict_to_schedule(variables, possibleOutcome, newSchedule))
+        print(possibleOutcome)
+        #display_grid(dict_to_schedule(variables, possibleOutcome, newSchedule))
         
