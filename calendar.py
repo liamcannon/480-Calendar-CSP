@@ -55,23 +55,23 @@ def generate_domain(course: Course, schedule: Schedule) -> List[Schedule]:
     # if(schedule.doubleBlock):
         # generate domain for double block courses (1x2)
         
-    for row in range(len(schedule.schedule)):
-        for column in range(len(schedule.schedule[row])):
-            if(course.doubleBlock):
-                if(column < SCHEDULE_WIDTH - 1):
+    if course.doubleBlock:    
+        for row in range(len(schedule.schedule)):
+            for column in range(len(schedule.schedule[row])):
+                if(column + 1 <= SCHEDULE_LENGTH-1):
                     if(schedule.schedule[row][column] == "-" and schedule.schedule[row][column + 1] == "-"):
                         tempCopy = deepcopy(schedule)
                         tempCopy.schedule[row][column] = course.name
                         tempCopy.schedule[row][column + 1] = course.name
                         domain.append(tempCopy)
-            else:
-                # generate domain for single block courses (1x1)
-                for row in range(2):
-                    for column in range(len(schedule.schedule[0])):
-                        if(schedule.schedule[row][column] == "-"):
-                            tempCopy = deepcopy(schedule)
-                            tempCopy.schedule[row][column] = course.name
-                            domain.append(tempCopy)
+    else:
+        # generate domain for single block courses (1x1)
+        for row in range(2):
+            for column in range(len(schedule.schedule[0])):
+                if(schedule.schedule[row][column] == "-"):
+                    tempCopy = deepcopy(schedule)
+                    tempCopy.schedule[row][column] = course.name
+                    domain.append(tempCopy)
     return domain
 class tempConstraint(Constraint[Course, list[Schedule]]):
     def __init__(self, variables: list[Schedule]):
