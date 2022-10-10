@@ -1,7 +1,8 @@
+import sched
 from xml import dom
 from typing import Dict, List, NamedTuple, Optional
-from csp import CSP, Constraint
 from copy import deepcopy
+from csp import CSP, Constraint
 
 # Calendar CSP problem
 
@@ -9,7 +10,7 @@ from copy import deepcopy
 
 # Course class
 class RoomSchedule(NamedTuple):
-    room: str
+    #room: str
     schedule: List[List[str]]
 
 class Room(NamedTuple):
@@ -17,13 +18,13 @@ class Room(NamedTuple):
 
 class Professor(NamedTuple):
     name: str
-    schedule: List[List[Room]]
+    #schedule: List[List[str]]
 
 class Course(NamedTuple):
     name: str
     room: Room
+    doubleBlock: bool
     professor: Professor
-    doubleBlock: bool = False
 # Schedule class
 
 class Schedule(NamedTuple):
@@ -49,14 +50,14 @@ def generate_domain(course: Course, schedule: Schedule) -> List[Schedule]:
     SCHEDULE_LENGTH = len(schedule[0])
 
 
-    domain: List[Schedule]
+    domain: List[Schedule] = []
 
     # if(schedule.doubleBlock):
         # generate domain for double block courses (1x2)
         
     for row in range(len(schedule.schedule)):
         for column in range(len(schedule.schedule[row])):
-            if(schedule.doubleBlock):
+            if(course.doubleBlock):
                 if(column < SCHEDULE_WIDTH - 1):
                     if(schedule.schedule[row][column] == "-" and schedule.schedule[row][column + 1] == "-"):
                         tempCopy = deepcopy(schedule)
@@ -66,22 +67,30 @@ def generate_domain(course: Course, schedule: Schedule) -> List[Schedule]:
             else:
                 # generate domain for single block courses (1x1)
                 for row in range(2):
-                    for column in range(2):
+                    for column in range(len(schedule.schedule[0])):
                         if(schedule.schedule[row][column] == "-"):
                             tempCopy = deepcopy(schedule)
                             tempCopy.schedule[row][column] = course.name
                             domain.append(tempCopy)
     return domain
+class tempConstraint(Constraint[Course, list[Schedule]]):
+    def __init__(self, variables: list[Schedule]):
+        self.variables: list[Schedule] = variables
 
-class ScheduleConstraint(Constraint[Course, List[Schedule]]):
-    # can't have same class twice on same day
-    # can't have same class twice on same time
-    # can't have overlapping classes in the same room
-    def __init__(self, courses: List[Course]) -> None:
-        super().__init__(courses)
 
-    def satisfied(self, assignment: Dict[Course, List[Schedule]]) -> bool:
-        tempList = List[List[Schedule]]
+    def satisfied(self, variableDict: Dict):
+        #print(variableDict)
+        stuff = [locs for values in variableDict.values() for locs in values]
+        schedule = Schedule([["-", "-", "-"], ["-", "-", "-"], ["-", "-", "-"], ["-", "-", "-"], ["-", "-", "-"]])
+        for z in stuff:
+            for i in range(len(schedule)):
+                for y in range(len(schedule[0])):
+                    if z[i][y] != "-" and schedule[i][y] == "-":
+                        schedule[i][y] = z[i][y]
+                    else:
+                        if schedule[i][y] != "-":
+                            return False
+        return True
         # check if any courses overlap
         
         
@@ -110,5 +119,24 @@ class ScheduleConstraint(Constraint[Course, List[Schedule]]):
 #         all_locations = [locs for values in assignment.values() for locs in values]
 #         #FROM BOOK 
 #         return len(set(all_locations)) == len(all_locations)
+
+if __name__ == "__main__":
+    newSchedule = Schedule([["-", "-", "-"], ["-", "-", "-"], ["-", "-", "-"], ["-", "-", "-"], ["-", "-", "-"]])
+    variables = [Course("300", Room("joyce110"), False, Professor("david")), Course("200", Room("joyce110"), False, Professor("david")), Course("400", Room("joyce110"), False, Professor("david"))]
+    variableDict = {}
+    #print(generate_domain(variables[0], newSchedule))
+    for x in variables:
+        variableDict[x] = generate_domain(x, deepcopy(newSchedule))
+    print(variableDict)
+    #stuff = [locs for values in variableDict.values() for locs in values]
+    testCSP = CSP(variables, variableDict)
+    testCSP.add_constraint(tempConstraint(variables))
+    possibleOutcome = testCSP.backtracking_search()
+    if isinstance(possibleOutcome, type(None)):
+        print("returned none")
+    else:
+        print("got something back")
+        print(possibleOutcome)
+    #print("hello")
 
 
