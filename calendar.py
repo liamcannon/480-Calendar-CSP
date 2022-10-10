@@ -17,13 +17,13 @@ class Room(NamedTuple):
 
 class Professor(NamedTuple):
     name: str
-    schedule: List[List[Room]]
+    # schedule: List[List[Room]]
 
 class Course(NamedTuple):
     name: str
     room: Room
+    doubleBlock: bool
     professor: Professor
-    doubleBlock: bool = False
 # Schedule class
 
 class Schedule(NamedTuple):
@@ -37,53 +37,78 @@ def generate_grid(rows: int, columns: int) -> Schedule:
 
 
 def display_grid(grid: Schedule) -> None:
-    for row in grid:
-        print("".join(row))
+    # rotate the grid so that it displays correctly
+    rotated_grid = list(zip(*grid))
+    for row in rotated_grid:
+        print(row)
 
 def generate_domain(course: Course, schedule: Schedule) -> List[Schedule]:
-    # initialize grid with random letters
-    # deep copy schedule
-    # copySchedule = deepcopy(schedule)
 
-    SCHEDULE_WIDTH = len(schedule)
-    SCHEDULE_LENGTH = len(schedule[0])
+    SCHEDULE_WIDTH = len(schedule.schedule)
+    SCHEDULE_LENGTH = len(schedule.schedule[0])
 
 
-    domain: List[Schedule]
+    domain: List[Schedule] = []
 
     # if(schedule.doubleBlock):
         # generate domain for double block courses (1x2)
         
-    for row in range(len(schedule.schedule)):
-        for column in range(len(schedule.schedule[row])):
-            if(schedule.doubleBlock):
-                if(column < SCHEDULE_WIDTH - 1):
+    if course.doubleBlock:    
+        for row in range(len(schedule.schedule)):
+            for column in range(len(schedule.schedule[row])):
+                if(column + 1 <= SCHEDULE_LENGTH-1):
                     if(schedule.schedule[row][column] == "-" and schedule.schedule[row][column + 1] == "-"):
                         tempCopy = deepcopy(schedule)
                         tempCopy.schedule[row][column] = course.name
                         tempCopy.schedule[row][column + 1] = course.name
                         domain.append(tempCopy)
-            else:
-                # generate domain for single block courses (1x1)
-                for row in range(2):
-                    for column in range(2):
-                        if(schedule.schedule[row][column] == "-"):
-                            tempCopy = deepcopy(schedule)
-                            tempCopy.schedule[row][column] = course.name
-                            domain.append(tempCopy)
+    else:
+        # generate domain for single block courses (1x1)
+        for row in range(2):
+            for column in range(len(schedule.schedule[0])):
+                if(schedule.schedule[row][column] == "-"):
+                    tempCopy = deepcopy(schedule)
+                    tempCopy.schedule[row][column] = course.name
+                    domain.append(tempCopy)
     return domain
+
+class TempConstraint(Constraint[Course, list[Schedule]]):
+    def __init__(self, variables: list[Schedule]):
+        self.variables: list[Schedule] = variables
+
+    def satisfied(self, variableDict: Dict):
+        #print(variableDict)
+        stuff = [locs for values in variableDict.values() for locs in values]
+        schedule = Schedule([["-", "-", "-"], ["-", "-", "-"], ["-", "-", "-"], ["-", "-", "-"], ["-", "-", "-"]])
+        for z in stuff:
+            for i in range(len(schedule)):
+                for y in range(len(schedule[0])):
+                    if z[i][y] != "-" and schedule[i][y] == "-":
+                        schedule[i][y] = z[i][y]
+                    else:
+                        if schedule[i][y] != "-":
+                            return False
+        return True
+
 
 class ScheduleConstraint(Constraint[Course, List[Schedule]]):
     # can't have same class twice on same day
     # can't have same class twice on same time
     # can't have overlapping classes in the same room
-    def __init__(self, courses: List[Course]) -> None:
-        super().__init__(courses)
+    def __init__(self, variables: List[Course]) -> None:
+        self.variables: List[Course] = variables
 
-    def satisfied(self, assignment: Dict[Course, List[Schedule]]) -> bool:
-        tempList = List[List[Schedule]]
+    def satisfied(self, assignment: Dict) -> bool:
         # check if any courses overlap
-        
+        values = [locs for values in assignment.values() for locs in values]
+        for i in values:
+            for j in values:
+                if i != j:
+                    for x in range(len(i)):
+                        for y in range(len(i[0])):
+                            if i[x][y] != "-" and j[x][y] != "-":
+                                return False
+        return True
         
     # def satisfied(self, assignment: Dict[str, List[GridLocation]]) -> bool:
     #     # constraint = [pos for values in assignment.values() for pos in values]
@@ -111,4 +136,35 @@ class ScheduleConstraint(Constraint[Course, List[Schedule]]):
 #         #FROM BOOK 
 #         return len(set(all_locations)) == len(all_locations)
 
+def solution() -> None:
+    # generate grid
+    schedule = generate_grid(2, 5)
+    display_grid(schedule)
+    # generate domain
+    # generate constraints
+    # generate CSP
+    # solve CSP
+    # display solution
 
+
+if __name__ == "__main__":
+    newSchedule = Schedule([["-", "-", "-"], ["-", "-", "-"], ["-", "-", "-"], ["-", "-", "-"], ["-", "-", "-"]])
+    variables = [Course("300", Room("joyce110"), True , Professor("david")), Course("200", Room("joyce110"), True, Professor("david")), Course("400", Room("joyce110"), True, Professor("david"))]
+    variableDict = {}
+    #print(generate_domain(variables[0], newSchedule))
+    for x in variables:
+        variableDict[x] = generate_domain(x, deepcopy(newSchedule))
+    # print(variableDict)
+    for i in [locs for values in variableDict.values() for locs in values]:
+        display_grid(i.schedule)
+        print("\n")
+    # stuff = [locs for values in variableDict.values() for locs in values]
+    testCSP = CSP(variables, variableDict)
+    # testCSP.add_constraint(TempConstraint(variables))
+    testCSP.add_constraint(ScheduleConstraint(variables))
+    possibleOutcome = testCSP.backtracking_search()
+    if isinstance(possibleOutcome, type(None)):
+        print("returned none")
+    else:
+        print("got something back")
+        print(possibleOutcome)
