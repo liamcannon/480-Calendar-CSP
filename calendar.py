@@ -30,7 +30,15 @@ class Course(NamedTuple):
 class Schedule(NamedTuple):
     schedule: List[List[Course]]
     
-
+def dict_to_schedule(variables, dict, schedule):
+    newSched = deepcopy(schedule.schedule)
+    list_of_domains = [dict[i].schedule for i in variables]
+    for i in list_of_domains:
+        for x in range(len(i)):
+            for y in range(len(i[0])):
+                if i[x][y] != "-":
+                    newSched[x][y] = i[x][y]
+    return newSched
 
 def generate_grid(rows: int, columns: int) -> Schedule:
     # initialize grid with random letters
@@ -38,8 +46,22 @@ def generate_grid(rows: int, columns: int) -> Schedule:
 
 
 def display_grid(grid: Schedule) -> None:
-    for row in grid:
-        print("".join(row))
+    # rotate the grid so that it displays correctly
+    """rotated_grid = list(zip(*grid))
+    for row in rotated_grid:
+        for i in row:
+            if isinstance(i, type(str)):
+                print("-", end="")
+            else:
+                print(i.course, end="")
+        print("\n")"""
+    for i in range(len(grid[0])):
+        for y in range(len(grid)):
+            if grid[y][i] == "-":
+                print("-", end="")
+            else:
+                print(grid[y][i].course.name, end="")
+        print("\n")
 
 def generate_domain(course: Course, schedule: Schedule) -> List[Schedule]:
     # initialize grid with random letters
