@@ -147,6 +147,8 @@ def solution(courses: List[Course], rooms: List[Room], professors: List[Professo
     variableDict = {}
     # generate empty grid
     newSched = generate_grid(5, 8)
+    #shuffle courses to add some randomness into generation
+    shuffle(courses)
     # generate domains for all courses
     for x in courses:
         variableDict[x] = generate_domain(x, deepcopy(newSched), professors, rooms)
