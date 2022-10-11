@@ -1,3 +1,4 @@
+# Taken from Chapter 3 of the Book Classic Computer Science Problems in Python by David Kopec 
 from typing import Generic, TypeVar, Dict, List, Optional
 from abc import ABC, abstractmethod
 

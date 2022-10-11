@@ -1,38 +1,50 @@
+# calendar.py
+# Solve the scheduling problem using the backtracking search algorithm
+# Project done for CSI-480 Artificial Intelligence at Champlain College
+# Completed by: Alec Ross, Joe Marchesini, Raymond Zheng, Graham Finlayson-Fife, and Liam Cannon
+# Date: 10/11/2022
+
 from xml import dom
 from typing import Dict, List, NamedTuple, Optional
 from csp import CSP, Constraint
 from copy import deepcopy
+from random import shuffle
 
-# Calendar CSP problem
+# set constants
+WEDNESDAY = 2
+FRIDAY = 4
 
-# room class
+BLOCK_FIVE = 4
+BLOCK_SIX = 5
+BLOCK_SEVEN = 6
+BLOCK_EIGHT = 7
 
-# Course class
-class RoomSchedule(NamedTuple):
-    room: str
-    schedule: List[List[str]]
 
 class Room(NamedTuple):
     name: str
 
+# represents a professor, and their level of class they can teach
 class Professor(NamedTuple):
     name: str
-    # schedule: List[List[Room]]
+    level: int
 
+# represents a course, whether its a double block, its name and what minimum level is required to teach it
 class Course(NamedTuple):
     name: str
     doubleBlock: bool
-# Schedule class
+    minLevel: int
 
+# representation of a single course, which room its in and the teacher
 class RoomCourse(NamedTuple):
     room: Room
     course: Course
-    # Need to add when we update domain to contain professors
-    # professor: Professor
+    professor: Professor
 
+# representation of teh schedule being used by the csp
 class Schedule(NamedTuple):
     schedule: List[List[RoomCourse]]
 
+# converts a dictionary to a schedule, with making lists of roomcourses in positions that allow for multiple classes in the same timeslot
 def dict_to_schedule(variables, dict, schedule):
     newSched = deepcopy(schedule.schedule)
     list_of_domains = [dict[i].schedule for i in variables]
@@ -40,115 +52,67 @@ def dict_to_schedule(variables, dict, schedule):
         for x in range(len(i)):
             for y in range(len(i[0])):
                 if i[x][y] != "-":
-                    newSched[x][y] = i[x][y]
+                    if newSched[x][y] == "-":
+                        newSched[x][y] = [i[x][y]]
+                    else:
+                        newSched[x][y].append(i[x][y])
     return newSched
 
 def generate_grid(rows: int, columns: int) -> Schedule:
     # initialize grid with random letters
-    return [["-" for c in range(columns)] for r in range(rows)]
+    return Schedule([["-" for c in range(columns)] for r in range(rows)])
 
-
+# display the schedule
 def display_grid(grid: Schedule) -> None:
     # rotate the grid so that it displays correctly
-    """rotated_grid = list(zip(*grid))
-    for row in rotated_grid:
-        for i in row:
-            if isinstance(i, type(str)):
-                print("-", end="")
-            else:
-                print(i.course, end="")
-        print("\n")"""
     for i in range(len(grid[0])):
         for y in range(len(grid)):
             if grid[y][i] == "-":
-                print("-,", end="")
+                print("no class", end=" | ")
             else:
-                print(grid[y][i].course.name + ",", end="")
+                for x in range(len(grid[y][i])):
+                    print(grid[y][i][x].course.name + " " + grid[y][i][x].professor.name + " " + grid[y][i][x].room.name, end="")
+                    if not (x+1 >= len(grid[y][i])):
+                        print(", ", end="")
+                    if x+1 >= len(grid[y][i]):
+                        print(" | ", end="")
         print("\n")
-
-def generate_domain(course: Course, schedule: Schedule) -> List[Schedule]:
-
+    
+# generates all combinations of courses at each time slot on each day in each room
+def generate_domain(course: Course, schedule: Schedule, prof: List[Professor], rooms: List[Room])-> List[Schedule]:
     SCHEDULE_WIDTH = len(schedule.schedule)
     SCHEDULE_LENGTH = len(schedule.schedule[0])
-    rooms: List[str] = [Room("JOYC 201"), Room("JOYC 210"), Room("JOYC 211"), Room("MIC 308")]
-
+    professors = deepcopy(prof)
 
     domain: List[Schedule] = []
 
-    # if(schedule.doubleBlock):
-        # generate domain for double block courses (1x2)
     for room in rooms:
-        roomCourse = RoomCourse(room, course)
-        if course.doubleBlock:    
-            for row in range(SCHEDULE_WIDTH):
-                for column in range(SCHEDULE_LENGTH):
-                    if(column + 1 <= SCHEDULE_LENGTH-1):
-                        if(schedule.schedule[row][column] == "-" and schedule.schedule[row][column + 1] == "-"):
-                            tempCopy = deepcopy(schedule)
-                            tempCopy.schedule[row][column] = roomCourse
-                            tempCopy.schedule[row][column + 1] = roomCourse
-                            domain.append(tempCopy)
-        else:
-            # generate domain for single block courses (1x1)
-            for row in range(2):
-                for column in range(len(schedule.schedule[0])):
-                    if(schedule.schedule[row][column] == "-"):
-                        tempCopy = deepcopy(schedule)
-                        tempCopy.schedule[row][column] = roomCourse
-                        tempCopy.schedule[row+3][column] = roomCourse
-                        domain.append(tempCopy)
+        shuffle(professors)
+        for professor in professors:
+            roomCourse = RoomCourse(room, course, professor)
+            if roomCourse.professor.level >= roomCourse.course.minLevel:
+                # generate domain for double block course (1x2)
+                if course.doubleBlock:    
+                    for row in range(SCHEDULE_WIDTH):
+                        for column in range(SCHEDULE_LENGTH):
+                            if(column + 1 <= SCHEDULE_LENGTH-1):
+                                if(schedule.schedule[row][column] == "-" and schedule.schedule[row][column + 1] == "-"):
+                                    tempCopy = deepcopy(schedule)
+                                    tempCopy.schedule[row][column] = roomCourse
+                                    tempCopy.schedule[row][column + 1] = roomCourse
+                                    domain.append(tempCopy)
+                else:
+                    # generate domain for single block courses (1x1)
+                    for row in range(2):
+                        for column in range(len(schedule.schedule[0])):
+                            if(schedule.schedule[row][column] == "-"):
+                                tempCopy = deepcopy(schedule)
+                                tempCopy.schedule[row][column] = roomCourse
+                                tempCopy.schedule[row+3][column] = roomCourse
+                                domain.append(tempCopy)
     return domain
 
-""" def OLD_generate_domain(course: Course, schedule: Schedule) -> List[Schedule]:
-
-    SCHEDULE_WIDTH = len(schedule.schedule)
-    SCHEDULE_LENGTH = len(schedule.schedule[0])
-
-
-
-    domain: List[Schedule] = []
-
-    # if(schedule.doubleBlock):
-        # generate domain for double block courses (1x2)
-    
-    if course.doubleBlock:    
-        for row in range(SCHEDULE_WIDTH):
-            for column in range(SCHEDULE_LENGTH):
-                if(column + 1 <= SCHEDULE_LENGTH-1):
-                    if(schedule.schedule[row][column] == "-" and schedule.schedule[row][column + 1] == "-"):
-                        tempCopy = deepcopy(schedule)
-                        tempCopy.schedule[row][column] = course.name
-                        tempCopy.schedule[row][column + 1] = course.name
-                        domain.append(tempCopy)
-    else:
-        # generate domain for single block courses (1x1)
-        for row in range(2):
-            for column in range(len(schedule.schedule[0])):
-                if(schedule.schedule[row][column] == "-"):
-                    tempCopy = deepcopy(schedule) 
-                    tempCopy.schedule[row][column] = course.name
-                    domain.append(tempCopy)
-    return domain """
-
-# class TempConstraint(Constraint[Course, list[Schedule]]):
-#     def __init__(self, variables: list[Schedule]):
-#         self.variables: list[Schedule] = variables
-
-#     def satisfied(self, variableDict: Dict):
-#         #print(variableDict)
-#         stuff = [locs for values in variableDict.values() for locs in values]
-#         schedule = Schedule([["-", "-", "-"], ["-", "-", "-"], ["-", "-", "-"], ["-", "-", "-"], ["-", "-", "-"]])
-#         for z in stuff:
-#             for i in range(len(schedule)):
-#                 for y in range(len(schedule[0])):
-#                     if z[i][y] != "-" and schedule[i][y] == "-":
-#                         schedule[i][y] = z[i][y]
-#                     else:
-#                         if schedule[i][y] != "-":
-#                             return False
-#         return True
-
-
+# some of this code was generated with GitHub Copilot
 class ScheduleConstraint(Constraint[Course, List[Schedule]]):
     # can't have same class twice on same day
     # can't have same class twice on same time slot
@@ -159,48 +123,54 @@ class ScheduleConstraint(Constraint[Course, List[Schedule]]):
     def satisfied(self, assignment: Dict) -> bool:
         # check if any courses overlap
         values = [locs for values in assignment.values() for locs in values]
-        for i in values:
-            for j in values:
-                if i != j:
-                    for x in range(len(i)):
-                        for y in range(len(i[0])):
-                            if i[x][y] != "-" and j[x][y] != "-":
+        for i in values: # for each course
+            for j in values: #  for each other course
+                if i != j: # if they are not the same course
+                    for x in range(len(i)): # for each row in the schedule
+                        for y in range(len(i[0])): # for each column in the schedule
+                            if i[x][y] != "-" and j[x][y] != "-": # if there is a class in both schedules
+                                # check if room or professor overlaps 
                                 if i[x][y].room == j[x][y].room or i[x][y].professor == j[x][y].professor:
                                     return False
-                                return False
+                            # check if courses are no no classes allowed days
+                            if i[x][y] != "-" or j[x][y] != "-":
+                                # time slots where classes are not allowed
+                                if x == WEDNESDAY and (y == BLOCK_FIVE or y == BLOCK_SIX):
+                                    return False
+                                # time lots where classes are not allowed
+                                elif x == FRIDAY and (y == BLOCK_SEVEN or y == BLOCK_EIGHT):
+                                    return False
         return True
 
-def solution() -> None:
-    # generate grid
-    schedule = generate_grid(2, 5)
-    # generate domain
-    # generate constraints
-    # generate CSP
-    # solve CSP
-    # display solution
+# solution function, passed courses, rooms and professors
+def solution(courses: List[Course], rooms: List[Room], professors: List[Professor]) -> None:
+    variableDict = {}
+    # generate empty grid
+    newSched = generate_grid(5, 8)
+    # generate domains for all courses
+    for x in courses:
+        variableDict[x] = generate_domain(x, deepcopy(newSched), professors, rooms)
+
+    # run csp on generated domains
+    csp = CSP(courses, variableDict)
+    csp.add_constraint(ScheduleConstraint(courses))
+    genOutcome = csp.backtracking_search()
+
+    # print csp's answer
+    if isinstance(genOutcome, type(None)):
+        print("returned none")
+    else:
+        # displays solution neatly
+        display_grid(dict_to_schedule(courses, genOutcome, newSched))
 
 
 if __name__ == "__main__":
-    newSchedule = Schedule([["-", "-", "-"], ["-", "-", "-"], ["-", "-", "-"], ["-", "-", "-"], ["-", "-", "-"]])
-    # variables = [Course("300", Room("joyce110"), True , Professor("david")), Course("200", Room("joyce110"), True, Professor("david")), Course("400", Room("joyce110"), True, Professor("david"))]
-    variables = [Course("300", True), Course("400", True), Course("200", False), Course("500", True), Course("600", True)]
-    variableDict = {}
-    #print(generate_domain(variables[0], newSchedule))
-    for x in variables:
-        variableDict[x] = generate_domain(x, deepcopy(newSchedule))
-    # print(variableDict)
-    for i in [locs for values in variableDict.values() for locs in values]:
-        display_grid(i.schedule)
-        print("\n")
-    # stuff = [locs for values in variableDict.values() for locs in values]
-    testCSP = CSP(variables, variableDict)
-    # testCSP.add_constraint(TempConstraint(variables))
-    testCSP.add_constraint(ScheduleConstraint(variables))
-    possibleOutcome = testCSP.backtracking_search()
-    if isinstance(possibleOutcome, type(None)):
-        print("returned none")
-    else:
-        print("got something back")
-
-        display_grid(dict_to_schedule(variables, possibleOutcome, newSchedule))
-        
+    # set parameters
+    professors: List[Professor] = [Professor("Murat", 4), Professor("David", 4), Professor("Brian", 4), Professor("Wei", 4), Professor("Sarah", 4), Professor("Frank", 4), Professor("Brent", 4), Professor("Scott", 4), Professor("Alex", 4), Professor("Eric", 4), Professor("Josh", 4)]
+    rooms: List[Room] = [Room("JOYC 201"), Room("JOYC 210"), Room("JOYC 211"), Room("MIC 308")]
+    courses = [Course("120", False, 1), Course("140", False, 1), Course("180", True, 1), Course("240", False, 2), Course("230", False, 2), Course("281", False, 2), Course("280", True, 2), 
+                Course("300", True, 3), Course("320", False, 3), Course("351", False, 3), Course("352", False, 3), Course("355", False, 3), Course("357", True, 3), Course("370", False, 3), 
+                Course("380", False, 3), Course("480", False, 4), Course("330", True, 3), Course("340", False, 3), Course("420", True, 4), Course("440", False, 4)]
+    
+    # find and print answer
+    solution(courses, rooms, professors)
