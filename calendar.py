@@ -165,7 +165,7 @@ class ScheduleConstraint(Constraint[Course, List[Schedule]]):
                     for x in range(len(i)):
                         for y in range(len(i[0])):
                             if i[x][y] != "-" and j[x][y] != "-":
-                                if i[x][y].room == j[x][y].room:
+                                if i[x][y].room == j[x][y].room or i[x][y].professor == j[x][y].professor:
                                     return False
                                 return False
         return True
@@ -183,7 +183,7 @@ def solution() -> None:
 if __name__ == "__main__":
     newSchedule = Schedule([["-", "-", "-"], ["-", "-", "-"], ["-", "-", "-"], ["-", "-", "-"], ["-", "-", "-"]])
     # variables = [Course("300", Room("joyce110"), True , Professor("david")), Course("200", Room("joyce110"), True, Professor("david")), Course("400", Room("joyce110"), True, Professor("david"))]
-    variables = [Course("300", True), Course("400", True), Course("200", False),Course("500", True),Course("600", True)]
+    variables = [Course("300", True), Course("400", True), Course("200", False), Course("500", True), Course("600", True)]
     variableDict = {}
     #print(generate_domain(variables[0], newSchedule))
     for x in variables:
