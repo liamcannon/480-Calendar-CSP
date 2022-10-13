@@ -5,7 +5,7 @@ Install Python
 
 Clone this github repo
 
-### Usage
+## Usage
 type 'python3 calendar.py" into terminal
 
 or
