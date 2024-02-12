@@ -46,7 +46,7 @@ class RoomCourse(NamedTuple):
     course: Course
     professor: Professor
 
-# representation of teh schedule being used by the csp
+# representation of the schedule being used by the csp
 
 
 class Schedule(NamedTuple):
@@ -158,7 +158,7 @@ class ScheduleConstraint(Constraint[Course, List[Schedule]]):
                                 # time slots where classes are not allowed
                                 if x == WEDNESDAY and (y == BLOCK_FIVE or y == BLOCK_SIX):
                                     return False
-                                # time lots where classes are not allowed
+                                # time slots where classes are not allowed
                                 elif x == FRIDAY and (y == BLOCK_SEVEN or y == BLOCK_EIGHT):
                                     return False
         return True
